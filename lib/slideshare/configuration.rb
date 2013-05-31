@@ -7,8 +7,20 @@ module SlideShare
 
     attr_accessor :api_key, :shared_secret
 
+    class << self
+      attr_accessor :api_key_default
+      attr_accessor :shared_secret_default
+    end
+
     def initialize
-      self.class::IVARS.each { |iv| instance_variable_set iv, nil }
+      self.class::IVARS.each do |iv|
+        class_iv = "#{iv}_default".to_sym
+        if self.class.instance_variable_defined? class_iv
+          instance_variable_set iv, self.class.instance_variable_get(class_iv)
+        else
+          instance_variable_set iv, nil
+        end
+      end
     end
 
     def load_from file

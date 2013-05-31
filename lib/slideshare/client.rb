@@ -129,7 +129,7 @@ module SlideShare
     #         detailed: Whether or not to include optional information.
     #                   1 to include, 0 (default) for basic information.
     def search_slideshows q, options = {}
-      do_request 'search_slideshows', option.merge(q: q)
+      do_request 'search_slideshows', options.merge(q: q)
     end
 
     # args:
@@ -153,7 +153,7 @@ module SlideShare
     #   limit: specify number of items to return
     #  offset: specify offset
     def get_user_contacts username_for, options = {}
-      do_request 'get_user_contacts', option.merge(username_for: username_for)
+      do_request 'get_user_contacts', options.merge(username_for: username_for)
     end
 
     # args:
@@ -259,6 +259,64 @@ module SlideShare
                                                           campaign_id: campaign_id)
     end
 
+    # +++++ non-API calls
+    def user_info username
+      require 'nokogiri'
+      require 'open-uri'
+
+      info = {}
+
+      url = "http://www.slideshare.net/#{username}"
+      doc = Nokogiri::HTML(open(url))
+      doc_s = doc.to_s
+
+      doc_s =~ /Followers\s\((\d+)\)/
+      info[:followers] = ($1 || 0).to_i
+      doc_s =~ /Following\s\((\d+)\)/
+      info[:following] = ($1 || 0).to_i
+      doc_s =~ /(\d+)\sSlideShares/
+      info[:slideshares] = ($1 || 0).to_i
+
+      # tags
+      tag_elements = doc.xpath('//p[@id="tagsMore"]//a')
+      if tag_elements.length > 0
+        # ignore the "...less" if it's there
+        # the ellipsis is a unicode HORIZONTAL ELLIPSIS and page encoding is UTF-8
+        pattern = '\xE2\x80\xA6less$'.encode 'UTF-8'
+        info[:tags] = tag_elements.map(&:text).reject do |a|
+          a =~ /#{pattern}/
+        end
+      end
+
+      # Fill follower and following names
+      # TODO
+
+      # Variable profile information
+      %w(country-name city region role about industry phone).each do |attr|
+        matches = doc.xpath(%!//span[contains(@class, "#{attr}")]!)
+        if matches.length == 1
+          matches.text.strip!
+          if ! matches.text.empty?
+            info[attr.tr('-', '_')] = matches.text
+          end
+        end
+      end
+
+      # Social networking links
+      links = doc.xpath('//div[@class="profile-social-links"]/a').map do |link|
+        {
+          network: link.text,
+          href: link[:href]
+        }
+      end
+      if ! links.empty?
+        info[:social_links] = links
+      end
+
+      info
+    end
+    # ----- non-API calls
+
     private
 
     def do_request cmd, options
@@ -280,6 +338,10 @@ module SlideShare
         hash[new_k] = val
         if val.is_a? Hash
           underscore_keys val
+        elsif val.is_a? Array
+          val.each do |v|
+            underscore_keys(v) if v.is_a?(Hash)
+          end
         end
       end
     end
