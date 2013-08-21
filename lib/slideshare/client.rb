@@ -271,15 +271,15 @@ module SlideShare
       doc_s = doc.to_s
 
       if user_id_el = doc.at_xpath('//*[@data-contactee]')
-        info[:user_id] = user_id_el['data-contactee']
+        info['user_id'] = user_id_el['data-contactee']
       end
 
       doc_s =~ /Followers\s\((\d+)\)/
-      info[:followers] = ($1 || 0).to_i
+      info['followers'] = ($1 || 0).to_i
       doc_s =~ /Following\s\((\d+)\)/
-      info[:following] = ($1 || 0).to_i
+      info['following'] = ($1 || 0).to_i
       doc_s =~ /(\d+)\sSlideShares/
-      info[:slideshares] = ($1 || 0).to_i
+      info['slideshares'] = ($1 || 0).to_i
 
       # tags
       tag_elements = doc.xpath('//p[@id="tagsMore"]//a')
@@ -287,7 +287,7 @@ module SlideShare
         # ignore the "...less" if it's there
         # the ellipsis is a unicode HORIZONTAL ELLIPSIS and page encoding is UTF-8
         pattern = '\xE2\x80\xA6less$'.encode 'UTF-8'
-        info[:tags] = tag_elements.map(&:text).reject do |a|
+        info['tags'] = tag_elements.map(&:text).reject do |a|
           a =~ /#{pattern}/
         end
       end
@@ -309,12 +309,12 @@ module SlideShare
       # Social networking links
       links = doc.xpath('//div[@class="profile-social-links"]/a').map do |link|
         {
-          network: link.text,
-          href: link[:href]
+          'network' => link.text,
+          'href' => link[:href]
         }
       end
       if ! links.empty?
-        info[:social_links] = links
+        info['social_links'] = links
       end
 
       info
