@@ -264,14 +264,20 @@ module SlideShare
       require 'nokogiri'
       require 'open-uri'
 
-      info = {}
+      info = {
+        'username' => username
+      }
 
       url = "http://www.slideshare.net/#{username}"
       doc = Nokogiri::HTML(open(url))
       doc_s = doc.to_s
 
-      if user_id_el = doc.at_xpath('//*[@data-contactee]')
-        info['user_id'] = user_id_el['data-contactee']
+      if el = doc.at_xpath('//*[@data-contactee]')
+        info['user_id'] = el['data-contactee']
+      end
+
+      if el = doc.xpath('//*[@class="profileHeader"]//h1')
+          info['name'] = el.text
       end
 
       doc_s =~ /Followers\s\((\d+)\)/
@@ -305,6 +311,7 @@ module SlideShare
           end
         end
       end
+      # web link
 
       # Social networking links
       links = doc.xpath('//div[@class="profile-social-links"]/a').map do |link|
