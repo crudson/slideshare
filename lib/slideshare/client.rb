@@ -270,6 +270,10 @@ module SlideShare
       doc = Nokogiri::HTML(open(url))
       doc_s = doc.to_s
 
+      if user_id_el = doc.at_xpath('//*[@data-contactee]')
+        info[:user_id] = user_id_el['data-contactee']
+      end
+
       doc_s =~ /Followers\s\((\d+)\)/
       info[:followers] = ($1 || 0).to_i
       doc_s =~ /Following\s\((\d+)\)/
